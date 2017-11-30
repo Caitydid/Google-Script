@@ -1,0 +1,85 @@
+function CleanAllTheThings(){
+  
+//Define all the variables first thing
+var ss = SpreadsheetApp.getActive();
+var allsheets = ss.getSheets();
+var create = ss.insertSheet("Merged",0);
+var destsheet = ss.getSheetByName("Merged");//Name of sheet you’re putting everything into. If you don’t like the name, change it, but make sure you change it in the for loop too, or it’ll give you an error
+var StartRow = 4;//Row to start with, must be the same for every sheet; change it if the data start in a different row
+var StartCol = 3;//Column where the actual data start, ditto above 
+var EndCol = 11;//End Column of all data, ditto above, but shouldn't ever change unless there are more columns--then just change this number accordingly
+var prOne = ss.getSheetByName("Profile 1");
+var rows_deleted = 0;
+
+//Remove All Empty Columns & Rows in the Entire Workbook
+
+for (var s in allsheets){
+ var sheet=allsheets[s]
+ if (sheet.getName() == "Merged"){//If the sheet is called “Merged”, don’t do anything to it!
+ }
+ else{
+  var maxColumns = sheet.getMaxColumns() 
+  var lastColumn = sheet.getLastColumn()
+  if (maxColumns-lastColumn != 0){
+   sheet.deleteColumns(lastColumn+1, maxColumns-lastColumn)
+  }
+  var maxRows = sheet.getMaxRows() 
+  var lastRow = sheet.getLastRow()
+  if (maxRows-lastRow != 0){
+   sheet.deleteRows(lastRow+1, maxRows-lastRow)
+  }
+ }
+}
+  
+//Create a Merged sheet
+for (var s in allsheets){
+ var sheet=allsheets[s]
+ if (sheet.getName() == "Merged"){//If the sheet is called “Merged”, don’t do anything to it!
+ }
+ else{//If the sheet is not called “Merged”, do stuff   
+  var EndRow = sheet.getLastRow()
+  var copyRng = sheet.getRange(StartRow,StartCol,EndRow,EndCol)    
+  var nextRow = 1 + destsheet.getLastRow()
+  destsheet.insertRowsAfter(destsheet.getMaxRows(), EndRow)//insert rows so Google doesn’t have fits. You end up with extras but you can either take them out with the add-on or just leave them be. I don’t think they’ll fill with ###### when you bring them back to Excel, if that’s what you decide to do  
+  copyRng.copyTo(destsheet.getRange(nextRow,2))//Row and Column of where to paste the information; you’re pasting into column 2 because you’re about to fill column one with the sheet name the data came from 
+  var LastRow = destsheet.getLastRow()//New last Row after pasting the data
+  var Sample = sheet.getRange(1,1)     
+  sheet.getRange(4,2).copyTo(destsheet.getRange(nextRow,1,LastRow-nextRow+1,1))//Paste the name of the sheet in column 1 for every row copied     
+ }
+}
+  
+//Add a Header
+prOne.getRange(3,3,3,11).copyTo(destsheet.getRange(1,2,1,10))
+prOne.getRange(4,1).copyTo(destsheet.getRange(1,1,1,1))
+
+//Get rid of the Solvent Peak rows
+var range = destsheet.getDataRange();
+var values = range.getValues();
+for (var i = 0; i < values.length; i++){
+ for (var j = 0; j < values[i].length; j++){
+  var value = values[i][j];//row numbers are 1-based, not zero-based like this for-loop, so we add one AND every time we delete a row, all of the rows move down one, so we will subtract this count
+  var row = i + 1 - rows_deleted;//if the type is a number, we don't need to look
+  if (typeof value === 'string'){
+   var result = value.search("SOLVENT PEAK");//the .search() method returns the index of the substring, or -1 if it is not found we only care if it is found, so test for not -1
+   if (result !== -1){
+    destsheet.deleteRow(row)
+    rows_deleted++
+   }
+  }
+ }
+}
+  
+//Delete blank rows and columns in Merged  
+var maxColumns = destsheet.getMaxColumns() 
+var lastColumn = destsheet.getLastColumn()
+if (maxColumns-lastColumn != 0){
+ destsheet.deleteColumns(lastColumn+1, maxColumns-lastColumn)
+}
+var maxRows = destsheet.getMaxRows() 
+var lastRow = destsheet.getLastRow()
+if (maxRows-lastRow != 0){
+ destsheet.deleteRows(lastRow+1, maxRows-lastRow)
+}
+}  
+
+ 
